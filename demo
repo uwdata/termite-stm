@@ -2,44 +2,44 @@
 
 function __fetch_infovis__ {
 	bin/fetch_infovis.sh $DATASET_PATH
-	META_PATH=$CORPUS_PATH/infovis-papers-meta.txt
-	CORPUS_PATH=$CORPUS_PATH/infovis-papers.txt
+	CORPUS_PATH=$DATASET_PATH/corpus/infovis-papers.txt
+	META_PATH=$DATASET_PATH/corpus/infovis-papers-meta.txt
 }
 
 function __fetch_20newsgroups__ {
 	bin/fetch_20newsgroups.sh $DATASET_PATH
-	META_PATH="NONE"
-	CORPUS_PATH=$CORPUS_PATH
+	CORPUS_PATH=$DATASET_PATH/corpus
 }
 
 function __fetch_nsf127992__ {
 	bin/fetch_nsf127992.sh $DATASET_PATH
-	META_PATH="NONE"
-	CORPUS_PATH=$CORPUS_PATH/nsf127992.txt
+	CORPUS_PATH=$DATASET_PATH/corpus/nsf127992.txt
 }
 
 function __fetch_nsf25k__ {
 	bin/fetch_nsf25k.py $DATASET_PATH
-	META_PATH="NONE"
-	CORPUS_PATH=$CORPUS_PATH/nsf25k.txt
+	CORPUS_PATH=$DATASET_PATH/corpus/nsf25k.txt
 }
 
 function __fetch_nsf10k__ {
 	bin/fetch_nsf10k.py $DATASET_PATH
-	META_PATH="NONE"
-	CORPUS_PATH=$CORPUS_PATH/nsf10k.txt
+	CORPUS_PATH=$DATASET_PATH/corpus/nsf10k.txt
 }
 
 function __fetch_nsf1k__ {
 	bin/fetch_nsf1k.py $DATASET_PATH
-	META_PATH="NONE"
-	CORPUS_PATH=$CORPUS_PATH/nsf1k.txt
+	CORPUS_PATH=$DATASET_PATH/corpus/nsf1k.txt
+}
+
+function __fetch_poliblogs__ {
+	bin/fetch_poliblogs.sh $DATASET_PATH
+	CORPUS_PATH=$DATASET_PATH/corpus/poliblogs2008.txt
+	META_PATH=$DATASET_PATH/corpus/poliblogs2008-meta.txt
 }
 
 function __train_mallet__ {
 	bin/setup_mallet.sh
 	echo "# Training a MALLET LDA topic model..."
-	echo
 	echo "bin/train_mallet.sh $CORPUS_PATH $MODEL_PATH"
 	echo
 	bin/train_mallet.sh $CORPUS_PATH $MODEL_PATH
@@ -48,7 +48,6 @@ function __train_mallet__ {
 
 function __import_mallet__ {
 	echo "# Importing a MALLET LDA topic model..."
-	echo
 	echo "bin/import_mallet.py $APP_IDENTIFIER $MODEL_PATH"
 	echo
 	bin/import_mallet.py $APP_IDENTIFIER $MODEL_PATH
@@ -69,16 +68,14 @@ function __import_mallet__ {
 function __train_treetm__ {
 	bin/setup_treetm.sh
 	echo "# Training a TreeTM model..."
+	echo "bin/train_treetm.py $CORPUS_PATH $MODEL_PATH"
 	echo
-	echo "bin/train_treetm.py $CORPUS_PATH $MODEL_PATH --iters 100"
-	echo
-	bin/train_treetm.py $CORPUS_PATH $MODEL_PATH --iters 100
+	bin/train_treetm.py $CORPUS_PATH $MODEL_PATH
 	echo
 }
 
 function __import_treetm__ {
 	echo "# Importing a TreeTM model..."
-	echo
 	echo "bin/import_treetm.py $APP_IDENTIFIER $MODEL_PATH"
 	echo
 	bin/import_treetm.py $APP_IDENTIFIER $MODEL_PATH
@@ -96,10 +93,39 @@ function __import_treetm__ {
 	echo
 }
 
+function __train_stm__ {
+	bin/setup_stm.sh
+	echo "# Training a Structural Topic Model..."
+	echo "bin/train_stm.py $CORPUS_PATH $MODEL_PATH"
+	echo
+	bin/train_stm.py $CORPUS_PATH $MODEL_PATH
+	echo
+}
+
+function __import_stm__ {
+	echo "# Importing a Structural Topic Model..."
+	echo "bin/import_stm.py $APP_IDENTIFIER $MODEL_PATH"
+	echo
+#	bin/import_stm.py $APP_IDENTIFIER $MODEL_PATH
+	bin/import_stm.py $APP_IDENTIFIER $DATASET_PATH/corpus/poliblogs2008.RData
+
+	echo
+	if [ "$META_PATH" == "NONE" ]
+	then
+		echo "bin/import_corpus.py $APP_IDENTIFIER"
+		echo
+		bin/import_corpus.py $APP_IDENTIFIER
+	else
+		echo "bin/import_corpus.py $APP_IDENTIFIER --meta $META_PATH"
+		echo
+		bin/import_corpus.py $APP_IDENTIFIER --meta $META_PATH
+	fi
+	echo
+}
+
 function __train_stmt__ {
 	bin/setup_stmt.sh
 	echo "# Training a STMT model..."
-	echo
 	echo "bin/train_stmt.py $CORPUS_PATH $MODEL_PATH"
 	echo
 	bin/train_stmt.py $CORPUS_PATH $MODEL_PATH
@@ -108,7 +134,6 @@ function __train_stmt__ {
 
 function __import_stmt__ {
 	echo "# Importing a STMT model..."
-	echo
 	echo "bin/import_stmt.py $APP_IDENTIFIER $MODEL_PATH"
 	echo
 	bin/import_stmt.py $APP_IDENTIFIER $MODEL_PATH
@@ -129,7 +154,6 @@ function __import_stmt__ {
 function __train_gensim__ {
 	bin/setup_gensim.sh
 	echo "# Training a gensim LDA topic model..."
-	echo
 	echo "bin/train_gensim.py $CORPUS_PATH $MODEL_PATH"
 	echo
 	bin/train_gensim.py $CORPUS_PATH $MODEL_PATH --passes 10
@@ -138,7 +162,6 @@ function __train_gensim__ {
 
 function __import_gensim__ {
 	echo "# Importing a gensim LDA topic model..."
-	echo
 	echo "bin/import_gensim.py $APP_IDENTIFIER $MODEL_PATH/corpus.dict $MODEL_PATH/output.model"
 	echo
 	bin/import_gensim.py $APP_IDENTIFIER $MODEL_PATH/corpus.dict $MODEL_PATH/output.model
@@ -158,11 +181,11 @@ function __import_gensim__ {
 if [ $# -ge 1 ] && [ "$1" != "-h" ] && [ "$1" != "--help" ]
 then
 	DATASET=$1
-	if [ "$DATASET" == "infovis" ] || [ "$DATASET" == "20newsgroups" ] || [ "$DATASET" == "nsf127992" ] || [ "$DATASET" == "nsf25k" ] || [ "$DATASET" == "nsf10k" ] || [ "$DATASET" == "nsf1k" ]
+	if [ "$DATASET" == "infovis" ] || [ "$DATASET" == "20newsgroups" ] || [ "$DATASET" == "nsf127992" ] || [ "$DATASET" == "nsf25k" ] || [ "$DATASET" == "nsf10k" ] || [ "$DATASET" == "nsf1k" ] || [ "$DATASET" == "poliblogs" ]
 	then
-		FETCH_DATASET=__fetch_${DATASET}__
+		FETCH_DATASET_FUNCTION=__fetch_${DATASET}__
 		DATASET_PATH=data/demo/$DATASET
-		CORPUS_PATH=$DATASET_PATH/corpus
+		CORPUS_PATH="NONE"
 		META_PATH="NONE"
 		if [ $# -ge 2 ]
 		then
@@ -172,17 +195,15 @@ then
 		fi
 		if [ "$MODEL" == "mallet" ] || [ "$MODEL" == "treetm" ] || [ "$MODEL" == "stmt" ] || [ "$MODEL" == "stm" ] || [ "$MODEL" == "gensim" ]
 		then
-			TRAIN_MODEL=__train_${MODEL}__
-			IMPORT_MODEL=__import_${MODEL}__
+			TRAIN_MODEL_FUNCTION=__train_${MODEL}__
+			IMPORT_MODEL_FUNCTION=__import_${MODEL}__
 			MODEL_PATH=$DATASET_PATH/model-$MODEL
 			APP_IDENTIFIER=${DATASET}_${MODEL}
 
 			bin/setup_web2py.sh
-			mkdir -p data
-			mkdir -p data/demo
-			$FETCH_DATASET
-			$TRAIN_MODEL
-			$IMPORT_MODEL
+			$FETCH_DATASET_FUNCTION
+			$TRAIN_MODEL_FUNCTION
+			$IMPORT_MODEL_FUNCTION
 			exit 0
 		fi
 	fi
@@ -202,6 +223,7 @@ echo "    nsf127992 | NSF grants"
 echo "              | 127,992 abstracts"
 echo
 echo "    poliblogs | Poliblogs"
+echo "              | 13,246 political blogs with date, rating, political affiliation"
 echo
 echo "Available models:"
 echo "       mallet | MAchine Learning for LanguagE Toolkit (MALLET)"
