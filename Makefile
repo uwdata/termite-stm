@@ -88,10 +88,16 @@ other-demos:
 ################################################################################
 # Other utilities
 
-utils: utils/mallet/CorpusWriter.jar
+utils: utils/mallet/CorpusWriter.jar utils/corenlp/SentenceSplitter.jar utils/corenlp/StreamingSentenceSplitter.jar
 
-utils/mallet/CorpusWriter.jar: utils/mallet/mallet_helpers/CorpusWriter.java
+utils/mallet/CorpusWriter.jar:
 	$(MAKE) -C utils/mallet
+
+utils/corenlp/SentenceSplitter.jar:
+	$(MAKE) -C utils/corenlp SentenceSplitter.jar
+
+utils/corenlp/StreamingSentenceSplitter.jar:
+	$(MAKE) -C utils/corenlp StreamingSentenceSplitter.jar
 
 ################################################################################
 

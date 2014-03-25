@@ -37,10 +37,6 @@ class ImportAbstraction( object ):
 			print 'Creating app folder: {}'.format( self.app_path )
 			os.makedirs( self.app_path )
 		
-		if not os.path.exists( self.data_path ):
-			print 'Creating data subfolder: {}'.format( self.data_path )
-			os.makedirs( self.data_path )
-		
 		if not os.path.exists( self.database_path ):
 			print 'Creating database subfolder: {}'.format( self.database_path )
 			os.makedirs( self.database_path )
@@ -55,10 +51,20 @@ class ImportAbstraction( object ):
 		if not os.path.exists( filename ):
 			print 'Setting up __init__.py'
 			os.system( 'touch {}'.format( filename ) )
-		
+
+		if not os.path.exists( self.data_path ):
+			print 'Creating data subfolder: {}'.format( self.data_path )
+			os.makedirs( self.data_path )
+
 		return True
 	
 	def ResolveMatrices( self ):
+		"""
+		Generate term-topic and doc-topic matrices (if needed)
+		Combine a 2D array term-topic-matrix.txt file with the term-index.json files.
+		Generate the required term-topic-matrix.json file.
+		Similarly for doc-topic-matrix.json file.
+		"""
 		index_filename = '{}/term-index.json'.format( self.data_path )
 		original_filename = '{}/term-topic-matrix.txt'.format( self.data_path )
 		resolved_filename = '{}/term-topic-matrix.json'.format( self.data_path )
@@ -89,6 +95,10 @@ class ImportAbstraction( object ):
 		return resolved
 			
 	def TransposeMatrices( self ):
+		"""
+		Generate topic-term matrix from term-topic matrix.
+		Generate topic-doc matrix from doc-topic matrix.
+		"""
 		original_filename = '{}/term-topic-matrix.json'.format( self.data_path )
 		transposed_filename = '{}/topic-term-matrix.json'.format( self.data_path )
 		with open( original_filename, 'r' ) as f:
