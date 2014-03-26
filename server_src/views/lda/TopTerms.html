@@ -18,6 +18,14 @@
 				{{pass}}
 			</select>
 		</div>
+		<div class="param">topicIndex = 
+			<select onchange="onSelectParam(this)">
+				<option value="{{response.write(GetURL({'topicIndex':None}),escape=False)}}" {{if 'topicIndex' in params:}}selected="selected"{{pass}}>&mdash;</option>
+				{{for n in range(0,5):}}
+					<option value="{{response.write(GetURL({'topicIndex':n}),escape=False)}}" {{if params['topicIndex'] == n:}}selected="selected"{{pass}}>{{=n}}</option>
+				{{pass}}
+			</select>
+		</div>
 		<div class="extra"><i>Or simply type in a URL into your browser</i> &nbsp; <i class="fa fa-level-up fa-2x"></i></div>
 	</div>
 
@@ -26,7 +34,7 @@
 			{{if configs['is_text']:}}<b>Text format</b>{{else:}}<a href="{{=GetURL({'format':None})}}">Text format</a>{{pass}} | 
 			{{if configs['is_graph']:}}<b>Graph format</b>{{else:}}<a href="{{=GetURL({'format':'graph'})}}">Graph format</a>{{pass}} | 
 			<a href="{{=GetURL({'format':'json'})}}">JSON object</a> | 
-			<a href="{{=GetURL({'format':'lyra','lyra':'TermCoFreqs'})}}">Lyra table</a>
+			<a href="{{=GetURL({'format':'lyra','lyra':'TopTerms'})}}">Lyra table</a>
 		)</span>
 	</div>
 

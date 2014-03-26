@@ -11,6 +11,7 @@ class TermiteCore( object ):
 		self.configs = self.GetConfigs()
 		self.params = {}
 		self.content = {}
+		self.lyra = [ { 'a' : 1, 'b' : 5 }, { 'a': 3, 'b' : 7 } ]
 
 ################################################################################		
 # Server, Dataset, Model, and Attribute
@@ -29,13 +30,8 @@ class TermiteCore( object ):
 	def GetAttribute( self ):
 		return self.request.function
 	
-	def GetURLs( self ):
-		urls = {
-			'text' : self.request.env['HTTP_HOST'] + self.request.env['PATH_INFO'] + self.GetQueryString( { 'format' : None } ),
-			'graph' : self.request.env['HTTP_HOST'] + self.request.env['PATH_INFO'] + self.GetQueryString( { 'format' : 'graph' } ),
-			'json' : self.request.env['HTTP_HOST'] + self.request.env['PATH_INFO'] + self.GetQueryString( { 'format' : 'json' } )
-		}
-		return urls
+	def GetURL( self ):
+		return self.request.env['wsgi_url_scheme'] + '://' + self.request.env['HTTP_HOST'] + self.request.env['PATH_INFO']
 	
 	def GetQueryString( self, keysAndValues = {} ):
 	   	query = { key : self.request.vars[ key ] for key in self.request.vars }
@@ -83,12 +79,10 @@ class TermiteCore( object ):
 				'TopicIndex',
 				'TermTopicMatrix',
 				'DocTopicMatrix',
-				'TopicTermMatrix',
-				'TopicDocMatrix',
 				'TopicCooccurrence',
 				'TopicCovariance',
-				'TopicTopTerms',
-				'TopicTopDocs'
+				'TopTerms',
+				'TopDocs'
 			]
 		if model == 'corpus':
 			return [
@@ -99,7 +93,9 @@ class TermiteCore( object ):
 				'TermProbs',
 				'TermCoProbs',
 				'TermPMI',
-				'TermSentencePMI'
+				'TermSentencePMI',
+				'TermG2',
+				'TermSentenceG2'
 			]
 		if model == 'vis':
 			return [
@@ -116,7 +112,7 @@ class TermiteCore( object ):
 		models = self.GetModels( dataset )
 		attribute = self.GetAttribute()
 		attributes = self.GetAttributes( dataset, model )
-		urls = self.GetURLs()
+		url = self.GetURL()
 		configs = {
 			'server' : server,
 			'dataset' : dataset,
@@ -125,12 +121,11 @@ class TermiteCore( object ):
 			'models' : models,
 			'attribute' : attribute,
 			'attributes' : attributes,
-			'url:text' : urls['text'],
-			'url:graph' : urls['graph'],
-			'url:json' : urls['json'],
-			'is:text' : not ( self.IsGraphFormat() or self.IsJsonFormat() ),
-			'is:graph' : self.IsGraphFormat(),
-			'is:json' : self.IsJsonFormat()
+			'url' : url,
+			'is_text' : self.IsTextFormat(),
+			'is_graph' : self.IsGraphFormat(),
+			'is_json' : self.IsJsonFormat(),
+			'is_lyra' : self.IsLyraFormat()
 		}
 		return configs
 	
@@ -151,6 +146,16 @@ class TermiteCore( object ):
 				return 0
 		except:
 			return defaultValue
+
+	def GetNonNegativeFloatParam( self, key, defaultValue ):
+		try:
+			n = float( self.request.vars[ key ] )
+			if n >= 0:
+				return n
+			else:
+				return 0.0
+		except:
+			return defaultValue
 	
 ################################################################################
 # Generate a response
@@ -158,12 +163,27 @@ class TermiteCore( object ):
 	def IsDebugMode( self ):
 		return 'debug' in self.request.vars
 	
-	def IsJsonFormat( self ):
-		return 'format' in self.request.vars and 'json' == self.request.vars['format'].lower()
+	def IsTextFormat( self ):
+		return not self.IsGraphFormat() and not self.IsJsonFormat()
 	
 	def IsGraphFormat( self ):
 		return 'format' in self.request.vars and 'graph' == self.request.vars['format'].lower()
+
+	def IsJsonFormat( self ):
+		return 'format' in self.request.vars and 'json' == self.request.vars['format'].lower()
+
+	def IsLyraFormat( self ):
+		return 'format' in self.request.vars and 'lyra' == self.request.vars['format'].lower()
 	
+	def IsMachineFormat( self ):
+		return self.IsJsonFormat() or self.IsLyraFormat()
+	
+	def HasLyraField( self ):
+		return 'lyra' in self.request.vars
+		
+	def GetLyraField( self ):
+		return self.request.vars['lyra']
+
 	def HasAllowedOrigin( self ):
 		return 'origin' in self.request.vars
 	
@@ -188,7 +208,7 @@ class TermiteCore( object ):
 			   value is None or value is True or value is False:
 				envJSON[ key ] = value
 			else:
-				envJSON[ key ] = 'value not JSON-serializable'
+				envJSON[ key ] = 'Value not JSON-serializable'
 		
 		data = {
 			'env' : envJSON,
@@ -213,13 +233,23 @@ class TermiteCore( object ):
 		return dataStr
 
 	def GenerateNormalResponse( self ):
+		if self.IsLyraFormat() and self.HasLyraField():
+			field = self.GetLyraField()
+			if field in self.content:
+				data = self.content[ field ]
+				dataStr = json.dumps( data, encoding = 'utf-8', indent = 2, sort_keys = True )
+				self.response.headers['Content-Type'] = 'application/json'
+				if self.HasAllowedOrigin():
+					self.response.headers['Access-Control-Allow-Origin'] = self.GetAllowedOrigin()
+				return dataStr
+
 		data = {
 			'configs' : self.configs,
 			'params' : self.params
 		}
 		data.update( self.content )
 		dataStr = json.dumps( data, encoding = 'utf-8', indent = 2, sort_keys = True )
-		
+	
 		if self.IsJsonFormat():
 			self.response.headers['Content-Type'] = 'application/json'
 			if self.HasAllowedOrigin():

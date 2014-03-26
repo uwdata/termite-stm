@@ -11,39 +11,36 @@ class Corpus( TermiteCore ):
 
 	def GetParam( self, key ):
 		if key == 'searchText':
-			value = self.GetStringParam( 'searchText' )
+			value = self.GetStringParam( key )
 			self.params.update({ key : value })
-
-		if key == 'searchLimit':
-			if self.IsJsonFormat():
-				value = self.GetNonNegativeIntegerParam( 'searchLimit', 100 )
-			else:
-				value = self.GetNonNegativeIntegerParam( 'searchLimit', 5 )
-			self.params.update({ key : value })
-
 		if key == 'searchOffset':
-			value = self.GetNonNegativeIntegerParam( 'searchOffset', 0 )
+			value = self.GetNonNegativeIntegerParam( key, 0 )
 			self.params.update({ key : value })
-
-		if key == 'termLimit':
-			if self.IsJsonFormat():
-				value = self.GetNonNegativeIntegerParam( 'termLimit', 100 )
+		if key == 'searchLimit':
+			if self.IsMachineFormat():
+				value = self.GetNonNegativeIntegerParam( key, 100 )
 			else:
-				value = self.GetNonNegativeIntegerParam( 'termLimit', 5 )
+				value = self.GetNonNegativeIntegerParam( key, 5 )
 			self.params.update({ key : value })
 
 		if key == 'termOffset':
-			value = self.GetNonNegativeIntegerParam( 'termOffset', 0 )
+			value = self.GetNonNegativeIntegerParam( key, 0 )
+			self.params.update({ key : value })
+		if key == 'termLimit':
+			if self.IsMachineFormat():
+				value = self.GetNonNegativeIntegerParam( key, 100 )
+			else:
+				value = self.GetNonNegativeIntegerParam( key, 5 )
 			self.params.update({ key : value })
 
 		if key == 'docIndex':
-			value = self.GetStringParam( 'docIndex' )
+			value = self.GetStringParam( key )
 			self.params.update({ key : value })
 
 		return value
 	
 	def LoadDocument( self ):
-		docIndex = self.GetParam("docIndex")
+		docIndex = self.GetParam('docIndex')
 		filename = os.path.join( self.request.folder, 'data/corpus', 'documents-meta.json' )
 		with open( filename ) as f:
 			corpus = json.load( f, encoding = 'utf-8' )
@@ -61,22 +58,27 @@ class Corpus( TermiteCore ):
 		return results
 	
 	def LoadTextSearch( self ):
-		searchText = self.GetParam("searchText")
-		searchLimit = self.GetParam("searchLimit")
-		searchOffset = self.GetParam("searchOffset")
+		# Parameters
+		searchText = self.GetParam('searchText')
+		searchLimit = self.GetParam('searchLimit')
+		searchOffset = self.GetParam('searchOffset')
+		
+		# Load from disk
 		filename = os.path.join( self.request.folder, 'data/corpus', 'documents-meta.json' )
 		with open( filename ) as f:
 			corpus = json.load( f, encoding = 'utf-8' )
 			corpusHeader = corpus['header']
 			corpusData = corpus['data']
-		documents = {}
+		documents = []
 		matchCount = 0
 		for docID, document in corpusData.iteritems():
 			docContent = document['DocContent']
 			if re.search( searchText, docContent ) is not None:
 				matchCount += 1
 				if searchOffset < matchCount and matchCount <= searchOffset + searchLimit:
-					documents[ docID ] = document
+					documents.append( document )
+		
+		# Responses
 		results = {
 			'Documents' : documents,
 			'SearchText' : searchText,
@@ -89,109 +91,195 @@ class Corpus( TermiteCore ):
 		return results
 
 	def LoadTermFreqs( self ):
+		# Parameters
 		termLimit = self.GetParam('termLimit')
 		termOffset = self.GetParam('termOffset')
+		
+		# Load from disk
 		filename = os.path.join( self.request.folder, 'data/corpus', 'corpus-term-stats.json' )
 		with open( filename ) as f:
 			termStats = json.load( f, encoding = 'utf-8' )
-			allTermFreqs = termStats['freqs']
-		allTerms = sorted( allTermFreqs.iterkeys(), key = lambda x : -allTermFreqs[x] )
-		termMaxCount = len(allTerms)
-		subTerms = allTerms[termOffset:termOffset+termLimit]
-		termCount = len(subTerms)
-		subTermFreqs = { term : allTermFreqs[term] for term in subTerms }
+			fullTable = termStats['freqs']
+		termMaxCount = len(fullTable)
+		vocab = sorted( fullTable.iterkeys(), key = lambda x : -fullTable[x] )
+		vocab = vocab[ termOffset:termOffset+termLimit ]
+		table = [ { 'text' : term, 'freq' : fullTable[term] } for term in vocab ]
+		termCount = len(table)
+		
+		# Responses
 		results = {
+			'TermFreqs' : table,
 			'TermLimit' : termLimit,
 			'TermOffset' : termOffset,
-			'TermCount' : termCount,
 			'TermMaxCount' : termMaxCount,
-			'TermFreqs' : subTermFreqs
-		}
-		self.content.update(results)
-		return results
-
-	def LoadTermCoFreqs( self ):
-		self.LoadTermFreqs()
-		termSet = frozenset( self.content['TermFreqs'].iterkeys() )
-		filename = os.path.join( self.request.folder, 'data/corpus', 'corpus-term-co-stats.json' )
-		with open( filename ) as f:
-			termCoStats = json.load( f, encoding = 'utf-8' )
-			allTermCoFreqs = termCoStats['coFreqs']
-		subTermCoFreqs = { term : allTermCoFreqs[term] for term in termSet if term in allTermCoFreqs }
-		for term, termFreqs in subTermCoFreqs.iteritems():
-			subTermCoFreqs[ term ] = { t : termFreqs[t] for t in termSet if t in termFreqs }
-		results = {
-			'TermCoFreqs' : subTermCoFreqs
+			'TermCount' : termCount,
+			'Vocab' : vocab
 		}
 		self.content.update(results)
 		return results
 
 	def LoadTermProbs( self ):
+		# Parameters
 		termLimit = self.GetParam('termLimit')
 		termOffset = self.GetParam('termOffset')
+		
+		# Load from disk
 		filename = os.path.join( self.request.folder, 'data/corpus', 'corpus-term-stats.json' )
 		with open( filename ) as f:
 			termStats = json.load( f, encoding = 'utf-8' )
-			allTermProbs = termStats['probs']
-		allTerms = sorted( allTermProbs.iterkeys(), key = lambda x : -allTermProbs[x] )
-		termMaxCount = len(allTerms)
-		subTerms = allTerms[termOffset:termOffset+termLimit]
-		termCount = len(subTerms)
-		subTermProbs = { term : allTermProbs[term] for term in subTerms }
+			fullTable = termStats['probs']
+		termMaxCount = len(fullTable)
+		vocab = sorted( fullTable.iterkeys(), key = lambda x : -fullTable[x] )
+		vocab = vocab[ termOffset:termOffset+termLimit ]
+		table = [ { 'text' : term, 'prob' : fullTable[term] } for term in vocab ]
+		termCount = len(table)
+
+		# Responses
 		results = {
+			'TermProbs' : table,
 			'TermLimit' : termLimit,
 			'TermOffset' : termOffset,
-			'TermCount' : termCount,
 			'TermMaxCount' : termMaxCount,
-			'TermProbs' : subTermProbs
+			'TermCount' : termCount,
+			'Vocab' : vocab
+		}
+		self.content.update(results)
+		return results
+
+	def LoadTermCoFreqs( self ):
+		# Vocab
+		self.LoadTermFreqs()
+		vocab = frozenset( self.content['Vocab'] )
+
+		# Load from disk
+		filename = os.path.join( self.request.folder, 'data/corpus', 'corpus-term-co-stats.json' )
+		with open( filename ) as f:
+			termCoStats = json.load( f, encoding = 'utf-8' )
+			fullTable = termCoStats['coFreqs']
+		table = []
+		for firstTerm, d in fullTable.iteritems():
+			if firstTerm in vocab:
+				table += [ { 'firstTerm' : firstTerm, 'secondTerm' : secondTerm, 'freq' : value } for secondTerm, value in d.iteritems() if secondTerm in vocab ]
+		table.sort( key = lambda x : -x['freq'] )
+		
+		# Responses
+		results = {
+			'TermCoFreqs' : table
 		}
 		self.content.update(results)
 		return results
 
 	def LoadTermCoProbs( self ):
+		# Vocab
 		self.LoadTermProbs()
-		termSet = frozenset( self.content['TermProbs'].iterkeys() )
+		vocab = frozenset( self.content['Vocab'] )
+
+		# Load from disk
 		filename = os.path.join( self.request.folder, 'data/corpus', 'corpus-term-co-stats.json' )
 		with open( filename ) as f:
 			termCoStats = json.load( f, encoding = 'utf-8' )
-			allTermCoProbs = termCoStats['coProbs']
-		subTermCoProbs = { term : allTermCoProbs[term] for term in termSet if term in allTermCoProbs }
-		for term, termProbs in subTermCoProbs.iteritems():
-			subTermCoProbs[ term ] = { t : termProbs[t] for t in termSet if t in termProbs }
+			fullTable = termCoStats['coProbs']
+		table = []
+		for firstTerm, d in fullTable.iteritems():
+			if firstTerm in vocab:
+				table += [ { 'firstTerm' : firstTerm, 'secondTerm' : secondTerm, 'prob' : value } for secondTerm, value in d.iteritems() if secondTerm in vocab ]
+		table.sort( key = lambda x : -x['prob'] )
+
+		# Responses
 		results = {
-			'TermCoProbs' : subTermCoProbs
+			'TermCoProbs' : table
 		}
 		self.content.update(results)
 		return results
 
 	def LoadTermPMI( self ):
+		# Vocab
 		self.LoadTermProbs()
-		termSet = frozenset( self.content['TermProbs'].iterkeys() )
+		vocab = frozenset( self.content['Vocab'] )
+
+		# Load from disk
 		filename = os.path.join( self.request.folder, 'data/corpus', 'corpus-term-co-stats.json' )
 		with open( filename ) as f:
 			termCoStats = json.load( f, encoding = 'utf-8' )
-			allTermPMI = termCoStats['pmi']
-		subTermPMI = { term : allTermPMI[term] for term in termSet if term in allTermPMI }
-		for term, termProbs in subTermPMI.iteritems():
-			subTermPMI[ term ] = { t : termProbs[t] for t in termSet if t in termProbs }
+			fullTable = termCoStats['pmi']
+		table = []
+		for firstTerm, d in fullTable.iteritems():
+			if firstTerm in vocab:
+				table += [ { 'firstTerm' : firstTerm, 'secondTerm' : secondTerm, 'pmi' : value } for secondTerm, value in d.iteritems() if secondTerm in vocab ]
+		table.sort( key = lambda x : -x['pmi'] )
+
+		# Responses
 		results = {
-			'TermPMI' : subTermPMI
+			'TermPMI' : table
 		}
 		self.content.update(results)
 		return results
 
 	def LoadTermSentencePMI( self ):
+		# Vocab
 		self.LoadTermProbs()
-		termSet = frozenset( self.content['TermProbs'].iterkeys() )
+		vocab = frozenset( self.content['Vocab'] )
+
+		# Load from disk
 		filename = os.path.join( self.request.folder, 'data/corpus', 'sentence-term-co-stats.json' )
 		with open( filename ) as f:
 			termCoStats = json.load( f, encoding = 'utf-8' )
-			allTermPMI = termCoStats['pmi']
-		subTermPMI = { term : allTermPMI[term] for term in termSet if term in allTermPMI }
-		for term, termProbs in subTermPMI.iteritems():
-			subTermPMI[ term ] = { t : termProbs[t] for t in termSet if t in termProbs }
+			fullTable = termCoStats['pmi']
+		table = []
+		for firstTerm, d in fullTable.iteritems():
+			if firstTerm in vocab:
+				table += [ { 'firstTerm' : firstTerm, 'secondTerm' : secondTerm, 'pmi' : value } for secondTerm, value in d.iteritems() if secondTerm in vocab ]
+		table.sort( key = lambda x : -x['pmi'] )
+
+		# Responses
 		results = {
-			'TermPMI' : subTermPMI
+			'TermSentencePMI' : table
+		}
+		self.content.update(results)
+		return results
+
+	def LoadTermG2( self ):
+		# Vocab
+		self.LoadTermProbs()
+		vocab = frozenset( self.content['Vocab'] )
+
+		# Load from disk
+		filename = os.path.join( self.request.folder, 'data/corpus', 'corpus-term-co-stats.json' )
+		with open( filename ) as f:
+			termCoStats = json.load( f, encoding = 'utf-8' )
+			fullTable = termCoStats['g2']
+		table = []
+		for firstTerm, d in fullTable.iteritems():
+			if firstTerm in vocab:
+				table += [ { 'firstTerm' : firstTerm, 'secondTerm' : secondTerm, 'g2' : value } for secondTerm, value in d.iteritems() if secondTerm in vocab ]
+		table.sort( key = lambda x : -x['g2'] )
+
+		# Responses
+		results = {
+			'TermG2' : table
+		}
+		self.content.update(results)
+		return results
+
+	def LoadTermSentenceG2( self ):
+		# Vocab
+		self.LoadTermProbs()
+		vocab = frozenset( self.content['Vocab'] )
+
+		# Load from disk
+		filename = os.path.join( self.request.folder, 'data/corpus', 'sentence-term-co-stats.json' )
+		with open( filename ) as f:
+			termCoStats = json.load( f, encoding = 'utf-8' )
+			fullTable = termCoStats['g2']
+		table = []
+		for firstTerm, d in fullTable.iteritems():
+			if firstTerm in vocab:
+				table += [ { 'firstTerm' : firstTerm, 'secondTerm' : secondTerm, 'g2' : value } for secondTerm, value in d.iteritems() if secondTerm in vocab ]
+		table.sort( key = lambda x : -x['g2'] )
+
+		# Responses
+		results = {
+			'TermSentenceG2' : table
 		}
 		self.content.update(results)
 		return results
