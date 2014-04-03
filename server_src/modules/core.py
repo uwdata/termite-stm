@@ -176,13 +176,13 @@ class TermiteCore( object ):
 		return 'format' in self.request.vars and 'lyra' == self.request.vars['format'].lower()
 	
 	def IsMachineFormat( self ):
-		return self.IsJsonFormat() or self.IsLyraFormat()
+		return self.IsJsonFormat() or self.IsGraphFormat() or self.IsLyraFormat()
 	
-	def HasLyraField( self ):
-		return 'lyra' in self.request.vars
-		
 	def GetLyraField( self ):
-		return self.request.vars['lyra']
+		if 'lyra' in self.request.vars:
+			return self.request.vars['lyra']
+		else:
+			return self.GetAttribute()
 
 	def HasAllowedOrigin( self ):
 		return 'origin' in self.request.vars
@@ -233,7 +233,7 @@ class TermiteCore( object ):
 		return dataStr
 
 	def GenerateNormalResponse( self ):
-		if self.IsLyraFormat() and self.HasLyraField():
+		if self.IsLyraFormat():
 			field = self.GetLyraField()
 			if field in self.content:
 				data = self.content[ field ]
@@ -248,18 +248,17 @@ class TermiteCore( object ):
 			'params' : self.params
 		}
 		data.update( self.content )
-		dataStr = json.dumps( data, encoding = 'utf-8', indent = 2, sort_keys = True )
 	
 		if self.IsJsonFormat():
 			self.response.headers['Content-Type'] = 'application/json'
 			if self.HasAllowedOrigin():
 				self.response.headers['Access-Control-Allow-Origin'] = self.GetAllowedOrigin()
-			return dataStr
-		elif self.IsGraphFormat():
+			return json.dumps( data, encoding = 'utf-8', indent = 2, sort_keys = True )
+		
+		if self.IsGraphFormat():
 			self.response.headers['Content-Type'] = 'text/html; charset=utf-8'
-			data[ 'content' ] = dataStr
 			return data
-		else:
-			self.response.headers['Content-Type'] = 'text/html; charset=utf-8'
-			data[ 'content' ] = dataStr
-			return data
+
+		self.response.headers['Content-Type'] = 'text/html; charset=utf-8'
+		data[ 'content' ] = json.dumps( data, encoding = 'utf-8', indent = 2, sort_keys = True )
+		return data

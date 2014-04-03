@@ -7,14 +7,14 @@
 		<div class="param">termLimit = 
 			<select onchange="onSelectParam(this)">
 				{{for n in [5,10,20,50,100,200,500]:}}
-					<option value="{{response.write(GetURL({'termLimit':n}),escape=False)}}" {{if params['termLimit'] == n:}}selected="selected"{{pass}}>{{=n}}</option>
+					<option value="{{response.write(GenerateURL({'termLimit':n}),escape=False)}}" {{if params['termLimit'] == n:}}selected="selected"{{pass}}>{{=n}}</option>
 				{{pass}}
 			</select>
 		</div>
 		<div class="param">termOffset = 
 			<select onchange="onSelectParam(this)">
 				{{for n in range(0,100,5):}}
-					<option value="{{response.write(GetURL({'termOffset':n}),escape=False)}}" {{if params['termOffset'] == n:}}selected="selected"{{pass}}>{{=n}}</option>
+					<option value="{{response.write(GenerateURL({'termOffset':n}),escape=False)}}" {{if params['termOffset'] == n:}}selected="selected"{{pass}}>{{=n}}</option>
 				{{pass}}
 			</select>
 		</div>
@@ -23,10 +23,8 @@
 
 	<div class="heading">Server Response
 		<span class="format">(
-			{{if configs['is_text']:}}<b>Text format</b>{{else:}}<a href="{{=GetURL({'format':None})}}">Text format</a>{{pass}} | 
-			{{if configs['is_graph']:}}<b>Graph format</b>{{else:}}<a href="{{=GetURL({'format':'graph'})}}">Graph format</a>{{pass}} | 
-			<a href="{{=GetURL({'format':'json'})}}">JSON object</a> | 
-			<a href="{{=GetURL({'format':'lyra','lyra':'TermIndex'})}}">Lyra table</a>
+			{{if configs['is_text']:}}<b>Text format</b>{{else:}}<a href="{{=GenerateURL({'format':None})}}">Text format</a>{{pass}} | 
+			<a href="{{=GenerateURL({'format':'json'})}}">Save as JSON</a> 
 		)</span>
 	</div>
 	
@@ -35,80 +33,5 @@
 {{pass}}
 {{if configs['is_graph']:}}
 	<div class="content"><div id="view" class="view"></div></div>
-{{pass}}
-
-{{if configs['is_graph']:}}
-<script type="text/javascript">
-var spec = {
-	"width": 400,
-	"height": 20 * {{=TermCount}},
-	"padding": {
-		"top": 10,
-		"left": 10,
-		"bottom": 10,
-		"right": 10
-	},
-	"data": [
-		{ "name": "table" }
-	],
-	"scales": [
-		{
-			"name": "x", "range": "width", "nice": true,
-			"domain": {"data": "table", "field": "data.freq"}
-		},
-	    {
-			"name": "y", "range": "height", "type": "ordinal",
-			"domain": {"data": "table", "field": "data.index"}
-	    }
-	],
-	"marks": [
-		{
-			"type": "rect",
-			"interactive": true,
-			"from": { "data": "table" },
-			"properties": {
-				"enter": {
-					"x": {"scale": "x", "value": 0},
-					"x2": {"scale": "x", "field": "data.freq"},
-					"y": {"scale": "y", "field": "data.index"},
-					"height": {"scale": "y", "band": true},
-					"fill": {"value": "steelblue"}
-				},
-				"update": {
-					"opacity": {"value": 0.5}
-				},
-				"hover": {
-					"opacity": {"value": 1}
-				}
-			}
-		},
-		{
-			"type" : "text",
-			"from" : { "data" : "table" },
-			"properties" : {
-				"enter": {
-					"x": {"scale": "x", "value": 0},
-					"y": {"scale": "y", "field": "data.index"},
-					"align": {"value": "left"},
-					"dx": {"value": 5},
-					"baseline": {"value": "top"},
-					"dy": {"value": 3},
-					"text": {"field": "data.text"},
-					"font": {"value": "Gill Sans"},
-					"fill": {"value": "steelblue"}
-				}
-			}
-		}
-	]
-};
-
-var data = { "table" :
-	{{import json;response.write(json.dumps(TermIndex,encoding='utf-8'),escape=False)}}
-};
-
-vg.parse.spec( spec, function( chart ) {
-	var view = chart({ el:"#view", data:data }).update();
-});
-</script>
 {{pass}}
 </div>

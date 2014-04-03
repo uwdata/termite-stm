@@ -108,6 +108,7 @@ class LDA( TermiteCore ):
 	def LoadTermTopicMatrix( self ):
 		# Parameters
 		self.LoadTermIndex()
+		self.LoadTopicIndex()
 		termSet = frozenset( d['text'] for d in self.content['TermIndex'] )
 		threshold = self.GetParam('threshold')
 		
@@ -130,6 +131,7 @@ class LDA( TermiteCore ):
 	def LoadTopicTermMatrix( self ):
 		# Parameters
 		self.LoadTermIndex()
+		self.LoadTopicIndex()
 		termSet = frozenset( d['text'] for d in self.content['TermIndex'] )
 		threshold = self.GetParam('threshold')
 
@@ -151,6 +153,7 @@ class LDA( TermiteCore ):
 	def LoadDocTopicMatrix( self ):
 		# Parameters
 		self.LoadDocIndex()
+		self.LoadTopicIndex()
 		docSet = frozenset( d['docID'] for d in self.content['DocIndex'] )
 		threshold = self.GetParam('threshold')
 		
@@ -173,6 +176,7 @@ class LDA( TermiteCore ):
 	def LoadTopicDocMatrix( self ):
 		# Parameters
 		self.LoadDocIndex()
+		self.LoadTopicIndex()
 		docSet = frozenset( d['docID'] for d in self.content['DocIndex'] )
 		threshold = self.GetParam('threshold')
 		
@@ -194,6 +198,7 @@ class LDA( TermiteCore ):
 		
 	def LoadTopicCooccurrence( self ):
 		# Load from disk
+		self.LoadTopicIndex()
 		filename = os.path.join( self.request.folder, 'data/lda', 'topic-cooccurrence.json' )
 		with open( filename ) as f:
 			topicCooccurrence = json.load( f, encoding = 'utf-8' )
@@ -211,6 +216,7 @@ class LDA( TermiteCore ):
 
 	def LoadTopicCovariance( self ):
 		# Load from disk
+		self.LoadTopicIndex()
 		self.LoadTopicCooccurrence()
 		topicCooccurrence = self.content['TopicCooccurrence']
 		normalization = sum( d['value'] for d in topicCooccurrence )
