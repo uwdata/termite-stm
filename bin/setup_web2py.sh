@@ -4,7 +4,7 @@ EXTERNALS_PATH=externals
 WEB2PY_PATH=web2py
 APPS_PATH=apps
 
-if [ ! -d "server_src" ] || [ ! -d "landing_src" ]
+if [ ! -d "server_src" ]
 then
 	echo "Usage: bin/setup_web2py.sh"
 	echo "    Download and set up the web2py framework."
@@ -79,10 +79,12 @@ function __setup_web2py__ {
 			ln -s ../$APPS_PATH/ $WEB2PY_PATH/applications
 			ln -s ../$WEB2PY_PATH/applications-original/admin/ $APPS_PATH/admin
 		fi
+
+		echo "    Available: $WEB2PY_PATH"
+		echo
 	else
 		echo "    Already available: $WEB2PY_PATH"
 	fi
-	echo
 }
 
 __setup_web2py__

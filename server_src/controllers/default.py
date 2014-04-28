@@ -1,7 +1,8 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-from core import TermiteCore
+from handlers.Home_Core import Home_Core
 
 def index():
-	core = TermiteCore( request, response )
-	return core.GenerateResponse()
+	handler = Home_Core(request, response)
+	return handler.GenerateResponse()

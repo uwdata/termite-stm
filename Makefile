@@ -11,7 +11,7 @@
 #   Build all utilities
 #   Build all demos
 
-all: web2py tools/mallet utils demo
+all: web2py tools utils
 
 ################################################################################
 # Web framework
@@ -23,96 +23,71 @@ web2py:
 # Topic modeling tools
 #   mallet, treetm, stm, gensim, stmt
 
-tools/mallet: utils
-	bin/setup_mallet.sh
+tools: tools/mallet tools/treetm tools/stm tools/gensim tools/stmt tools/corenlp
 
-tools/treetm:
-	bin/setup_treetm.sh
-
-tools/stm:
-	bin/setup_stm.sh
+tools/corenlp: utils
+	bin/setup_corenlp.sh
 
 tools/gensim:
 	bin/setup_gensim.sh
 
+tools/mallet: utils
+	bin/setup_mallet.sh
+
 tools/stmt:
 	bin/setup_stmt.sh
 
-################################################################################
-# Datasets
+tools/stm:
+	bin/setup_stm.sh
 
-data/demo/20newsgroups:
-	bin/fetch_20newsgroups.sh
-
-data/demo/infovis:
-	bin/fetch_infovis.sh
-
-data/demo/poliblogs:
-	bin/fetch_poliblogs.sh
-
-data/demo/nsf146k:
-	bin/fetch_nsf146k.sh
+tools/treetm:
+	bin/setup_treetm.sh
 
 ################################################################################
 # Demos
-#   Download and build an LDA model using the InfoVis dataset
+#   Download and build an LDA model using a provided dataset
 
 demo:
-	./demo infovis mallet
+	./demo.py infovis mallet
 
 demos:
-	./demo infovis mallet
-	./demo infovis gensim
-	./demo poliblogs stm
+	./demo.py infovis gensim
+	./demo.py poliblogs stm
+	./demo.py infovis treetm
 
 all-demos:
-	./demo infovis mallet
-	./demo infovis gensim
-	./demo infovis treetm
-	./demo poliblogs mallet
-	./demo poliblogs gensim
-	./demo poliblogs treetm
-	./demo poliblogs stm
-	./demo fomc mallet
-	./demo fomc gensim
-	./demo fomc treetm
-	./demo fomc stm
-	./demo 20newsgroups mallet
-	./demo 20newsgroups gensim
-	./demo 20newsgroups treetm
-	./demo nsf146k mallet
-	./demo nsf146k gensim
-	./demo nsf146k treetm
-
-other-demos:
-	bin/fetch_nsf146k.sh
-	bin/derive_nsf1k.py
-	./demo nsf1k mallet
-	./demo nsf1k treetm
-	bin/derive_nsf10k.py
-	./demo nsf10k mallet
-	./demo nsf10k treetm
-	bin/derive_nsf25k.py
-	./demo nsf25k mallet
-	./demo nsf25k treetm
-	./demo nsf146k mallet
-	./demo nsf146k treetm
+	./demo.py infovis mallet
+	./demo.py infovis gensim
+	./demo.py infovis treetm
+	./demo.py nsf1k mallet
+	./demo.py nsf1k treetm
+	./demo.py nsf10k mallet
+	./demo.py nsf10k treetm
+	./demo.py nsf25k mallet
+	./demo.py nsf25k treetm
+	./demo.py poliblogs mallet
+	./demo.py poliblogs gensim
+	./demo.py poliblogs stm
+	./demo.py fomc mallet
+	./demo.py fomc gensim
+	./demo.py fomc stm
+	./demo.py 20newsgroups mallet
+	./demo.py 20newsgroups gensim
+	./demo.py nsfgrants mallet
 
 ################################################################################
 # Other utilities
 
-utils: utils/mallet/CorpusWriter.jar utils/corenlp/SentenceSplitter.jar utils/corenlp/StreamingSentenceSplitter.jar
+utils: utils/mallet/CorpusWriter.jar utils/corenlp/SentenceSplitter.jar
 
 utils/mallet/CorpusWriter.jar:
 	$(MAKE) -C utils/mallet
 
 utils/corenlp/SentenceSplitter.jar:
-	$(MAKE) -C utils/corenlp SentenceSplitter.jar
-
-utils/corenlp/StreamingSentenceSplitter.jar:
-	$(MAKE) -C utils/corenlp StreamingSentenceSplitter.jar
+	$(MAKE) -C utils/corenlp
 
 ################################################################################
 
 clean:
 	rm -rf externals
+	rm -rf tools

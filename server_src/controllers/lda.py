@@ -1,52 +1,65 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-from lda import LDA
+from db.Corpus_DB import Corpus_DB
+from db.LDA_DB import LDA_DB
+from handlers.LDA_Core import LDA_Core
 
 def index():
-	lda = LDA( request, response )
-	return lda.GenerateResponse()
+	with LDA_DB() as lda_db:
+		handler = LDA_Core(request, response, lda_db)
+	return handler.GenerateResponse()
 
 def TermIndex():
-	lda = LDA( request, response )
-	lda.LoadTermIndex()
-	return lda.GenerateResponse()
+	with LDA_DB() as lda_db:
+		handler = LDA_Core(request, response, lda_db)
+		handler.LoadTerms()
+	return handler.GenerateResponse()
 
 def DocIndex():
-	lda = LDA( request, response )
-	lda.LoadDocIndex()
-	return lda.GenerateResponse()
+	with LDA_DB() as lda_db:
+		handler = LDA_Core(request, response, lda_db)
+		handler.LoadDocs()
+	return handler.GenerateResponse()
 
 def TopicIndex():
-	lda = LDA( request, response )
-	lda.LoadTopicIndex()
-	return lda.GenerateResponse()
+	with LDA_DB() as lda_db:
+		handler = LDA_Core(request, response, lda_db)
+		handler.LoadTopics()
+	return handler.GenerateResponse()
 
 def TermTopicMatrix():
-	lda = LDA( request, response )
-	lda.LoadTermTopicMatrix()
-	return lda.GenerateResponse()
+	with LDA_DB() as lda_db:
+		handler = LDA_Core(request, response, lda_db)
+		handler.LoadTermTopicMatrix()
+	return handler.GenerateResponse()
 
 def DocTopicMatrix():
-	lda = LDA( request, response )
-	lda.LoadDocTopicMatrix()
-	return lda.GenerateResponse()
+	with LDA_DB() as lda_db:
+		handler = LDA_Core(request, response, lda_db)
+		handler.LoadDocTopicMatrix()
+	return handler.GenerateResponse()
 
-def TopicCooccurrence():
-	lda = LDA( request, response )
-	lda.LoadTopicCooccurrence()
-	return lda.GenerateResponse()
+def TopicCooccurrences():
+	with LDA_DB() as lda_db:
+		handler = LDA_Core(request, response, lda_db)
+		handler.LoadTopicCooccurrences()
+	return handler.GenerateResponse()
 
 def TopicCovariance():
-	lda = LDA( request, response )
-	lda.LoadTopicCovariance()
-	return lda.GenerateResponse()
+	with LDA_DB() as lda_db:
+		handler = LDA_Core(request, response, lda_db)
+		handler.LoadTopicCovariance()
+	return handler.GenerateResponse()
 
 def TopTerms():
-	lda = LDA( request, response )
-	lda.LoadTopTerms()
-	return lda.GenerateResponse()
+	with LDA_DB() as lda_db:
+		handler = LDA_Core(request, response, lda_db)
+		handler.LoadTopTerms()
+	return handler.GenerateResponse()
 
 def TopDocs():
-	lda = LDA( request, response )
-	lda.LoadTopDocs()
-	return lda.GenerateResponse()
+	with LDA_DB() as lda_db:
+		handler = LDA_Core(request, response, lda_db)
+		handler.LoadTopDocs()
+	return handler.GenerateResponse()
